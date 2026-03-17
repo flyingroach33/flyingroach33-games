@@ -10,7 +10,7 @@ async function startServer() {
   // API routes FIRST
   app.get('/api/games', (req, res) => {
     try {
-      const gamesPath = path.join(process.cwd(), 'src/data/games.json');
+      const gamesPath = path.join(process.cwd(), 'public/games.json');
       if (fs.existsSync(gamesPath)) {
         const games = JSON.parse(fs.readFileSync(gamesPath, 'utf-8'));
         res.json(games);

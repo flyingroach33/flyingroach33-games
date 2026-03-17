@@ -7,6 +7,7 @@ const __dirname = path.dirname(__filename);
 
 const gamesDir = path.join(__dirname, '../public/games');
 const outputFile = path.join(__dirname, '../src/data/games.json');
+const publicOutputFile = path.join(__dirname, '../public/games.json');
 
 function extractTitle(file, htmlContent) {
   const base = path.basename(file, path.extname(file));
@@ -138,6 +139,7 @@ function generateGamesList() {
   }
 
   fs.writeFileSync(outputFile, JSON.stringify(games, null, 2));
+  fs.writeFileSync(publicOutputFile, JSON.stringify(games, null, 2));
   console.log(`Generated games.json with ${games.length} games.`);
 }
 

@@ -279,7 +279,7 @@ export default function App() {
   useEffect(() => {
     setRandomTitle(titles[Math.floor(Math.random() * titles.length)]);
     
-    fetch('/api/games')
+    fetch('/games.json')
       .then(res => res.json())
       .then(data => {
         setGamesData(data);
