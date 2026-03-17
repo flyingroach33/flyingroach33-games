@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Gamepad2, X, Play, Bug, Search, Shield, ShieldOff, Zap, Lock, Maximize } from 'lucide-react';
+import { Gamepad2, X, Play, Bug, Search, Shield, ShieldOff, Zap, Lock, Maximize, RotateCcw } from 'lucide-react';
 
 interface GameData {
   id: string;
@@ -279,9 +279,13 @@ export default function App() {
   useEffect(() => {
     setRandomTitle(titles[Math.floor(Math.random() * titles.length)]);
     
-    fetch('/games.json')
-      .then(res => res.json())
+    fetch('/games.json?v=' + Date.now())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
       .then(data => {
+        console.log("Fetched games:", data.length);
         setGamesData(data);
         setLoading(false);
       })
@@ -757,7 +761,7 @@ export default function App() {
                     }}
                     className="text-[10px] font-bold uppercase tracking-widest text-white/40 hover:text-blue-500 transition-colors flex items-center gap-2 ml-4"
                   >
-                    <Bug className="w-3 h-3" />
+                    <RotateCcw className="w-3 h-3" />
                     Reload
                   </button>
                   <button
