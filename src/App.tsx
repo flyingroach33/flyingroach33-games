@@ -263,6 +263,20 @@ export default function App() {
     }
   };
 
+  const browserIframeRef = useRef<HTMLIFrameElement>(null);
+
+  const toggleBrowserFullScreen = () => {
+    if (browserIframeRef.current) {
+      if (browserIframeRef.current.requestFullscreen) {
+        browserIframeRef.current.requestFullscreen();
+      } else if ((browserIframeRef.current as any).webkitRequestFullscreen) {
+        (browserIframeRef.current as any).webkitRequestFullscreen();
+      } else if ((browserIframeRef.current as any).msRequestFullscreen) {
+        (browserIframeRef.current as any).msRequestFullscreen();
+      }
+    }
+  };
+
   const triggerSquishyEffect = () => {
     setShowSquishyEffect(true);
     const audio = new Audio('https://www.myinstants.com/media/sounds/metal-pipe-clang.mp3');
@@ -614,15 +628,25 @@ export default function App() {
                     className="w-full bg-black/40 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-brand-gold/50 transition-all"
                   />
                 </form>
-                <button
-                  onClick={() => setShowBrowser(false)}
-                  className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/40 hover:text-white"
-                >
-                  <X className="w-6 h-6" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={toggleBrowserFullScreen}
+                    className="p-2 bg-white/5 border border-white/10 rounded-lg text-white/40 hover:text-brand-gold transition-all"
+                    title="Fullscreen Browser"
+                  >
+                    <Maximize className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => setShowBrowser(false)}
+                    className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/40 hover:text-white"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
               </div>
               <div className="flex-1 bg-white relative">
                 <iframe
+                  ref={browserIframeRef}
                   src={browserUrl}
                   className="w-full h-full border-0"
                   title="Browser"
