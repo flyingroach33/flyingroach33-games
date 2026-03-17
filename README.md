@@ -1,11 +1,21 @@
-<div align="center">
+# flyingroach33 games
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+A clean, brown-themed game website hosting HTML games.
 
-  <h1>Built with AI Studio</h2>
+## How to add your games
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+1. Open the `public/games` directory.
+2. Upload your HTML files (e.g., `1.html`, `2.html`, `mygame.html`).
+3. Upload your corresponding PNG thumbnails with the same name (e.g., `1.png`, `2.png`, `mygame.png`).
+4. The site will automatically detect them and generate the game list when you build or start the development server.
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## How to run locally
 
-</div>
+1. Install dependencies: `npm install`
+2. Start the dev server: `npm run dev`
+3. The `prebuild` script will automatically run and generate the `games.json` file based on the contents of the `public/games` directory.
+
+This site is ready to be deployed to Netlify via GitHub. 
+When Netlify runs `npm run build`, it will automatically run the `prebuild` script which scans the `public/games` directory and generates the `src/data/games.json` file.
+
+Enjoy your arcade!
