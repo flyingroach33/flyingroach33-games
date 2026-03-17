@@ -91,7 +91,9 @@ function generateGamesList() {
     fs.mkdirSync(gamesDir, { recursive: true });
   }
 
+  console.log(`Scanning directory: ${gamesDir}`);
   const files = fs.readdirSync(gamesDir);
+  console.log(`Found ${files.length} files in games directory.`);
   const gamesMap = new Map();
 
   for (const file of files) {
@@ -110,8 +112,10 @@ function generateGamesList() {
       const htmlContent = fs.readFileSync(path.join(gamesDir, file), 'utf-8');
       game.title = extractTitle(file, htmlContent);
       game.htmlFile = `/games/${file}`;
+      console.log(`Registered HTML for game ${base}: ${game.title}`);
     } else if (['.png', '.jpg', '.jpeg', '.gif', '.webp'].includes(ext)) {
       game.imageFile = `/games/${file}`;
+      console.log(`Registered Image for game ${base}: ${game.imageFile}`);
     }
   }
 

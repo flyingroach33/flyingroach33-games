@@ -11,10 +11,14 @@ async function startServer() {
   app.get('/api/games', (req, res) => {
     try {
       const gamesPath = path.join(process.cwd(), 'public/games.json');
+      console.log('Fetching games from:', gamesPath);
       if (fs.existsSync(gamesPath)) {
-        const games = JSON.parse(fs.readFileSync(gamesPath, 'utf-8'));
+        const content = fs.readFileSync(gamesPath, 'utf-8');
+        const games = JSON.parse(content);
+        console.log(`Found ${games.length} games in games.json`);
         res.json(games);
       } else {
+        console.warn('games.json not found at:', gamesPath);
         res.json([]);
       }
     } catch (error) {

@@ -293,13 +293,18 @@ export default function App() {
   useEffect(() => {
     setRandomTitle(titles[Math.floor(Math.random() * titles.length)]);
     
-    fetch('/games.json?v=' + Date.now())
+    fetch('/api/games?v=' + Date.now())
+      .then(res => {
+        if (!res.ok) return fetch('/games.json?v=' + Date.now());
+        return res;
+      })
       .then(res => {
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         return res.json();
       })
       .then(data => {
         console.log("Fetched games:", data.length);
+        console.log("First game sample:", data[0]);
         setGamesData(data);
         setLoading(false);
       })
