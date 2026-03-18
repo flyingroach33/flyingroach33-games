@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node scripts/generate-games.js && tsx server.ts",
-    "prebuild": "node scripts/generate-games.js",
+    "dev": "tsx server.ts",
+    "prebuild": "echo 'No games to generate'",
     "build": "vite build && esbuild server.ts --bundle --platform=node --target=node18 --outfile=dist/server.cjs --format=cjs --external:vite --external:express",
     "preview": "vite preview",
     "clean": "rm -rf dist",

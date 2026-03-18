@@ -98,7 +98,6 @@ export default function App() {
   const [showHorrorSequence, setShowHorrorSequence] = useState(false);
   const [showBrowser, setShowBrowser] = useState(false);
   const [browserUrl, setBrowserUrl] = useState("https://rammer.nana.alliancetravel.tur.ar/");
-  const [inputUrl, setInputUrl] = useState("");
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbackType, setFeedbackType] = useState<'feedback' | 'request'>('feedback');
   const [feedbackMessage, setFeedbackMessage] = useState("");
@@ -177,13 +176,6 @@ export default function App() {
     { name: "Server 3", url: "https://mathexcel.texasmath.net/" },
     { name: "Server 4", url: "https://tenpiece.machophd.org/" }
   ];
-
-  const handleBrowserSearch = (e: any) => {
-    e.preventDefault();
-    let url = inputUrl;
-    if (!url.startsWith('http')) url = 'https://' + url;
-    setBrowserUrl(url);
-  };
 
   useEffect(() => {
     if (randomTitle === "i see you") {
@@ -623,16 +615,7 @@ export default function App() {
                     ))}
                   </select>
                 </div>
-                <form onSubmit={handleBrowserSearch} className="flex-1 min-w-[200px] relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
-                  <input
-                    type="text"
-                    placeholder="Enter URL or search..."
-                    value={inputUrl}
-                    onChange={(e) => setInputUrl(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-brand-gold/50 transition-all"
-                  />
-                </form>
+                <div className="flex-1" />
                 <div className="flex items-center gap-2">
                   <button
                     onClick={toggleBrowserFullScreen}
