@@ -1,7 +1,18 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Gamepad2, X, Play, Bug, Search, Shield, ShieldOff, Zap, Lock, Maximize, RotateCcw } from 'lucide-react';
+import { Gamepad2, X, Play, Bug, Search, Shield, ShieldOff, Zap, Lock, Maximize, RotateCcw, Heart, Clock, Settings, Palette, Eye } from 'lucide-react';
 import games from './data/games.json';
+
+type CloakType = 'google' | 'canvas' | 'classroom' | 'powerschool' | 'wikipedia';
+type ThemeType = 'roach' | 'matrix' | 'void';
+
+const CLOAK_CONFIG: Record<CloakType, { title: string, icon: string }> = {
+  google: { title: 'Google', icon: 'https://www.google.com/favicon.ico' },
+  canvas: { title: 'Dashboard', icon: 'https://instructure-uploads.s3.amazonaws.com/account_158020000000000001/attachments/54741/favicon.ico' },
+  classroom: { title: 'Classes', icon: 'https://ssl.gstatic.com/classroom/favicon.png' },
+  powerschool: { title: 'Grades and Attendance', icon: 'https://www.powerschool.com/wp-content/themes/powerschool/favicon.ico' },
+  wikipedia: { title: 'Wikipedia', icon: 'https://en.wikipedia.org/static/favicon/wikipedia.ico' }
+};
 
 interface GameData {
   id: string;
@@ -78,6 +89,67 @@ const RoachBackground = () => {
   );
 };
 
+const MatrixBackground = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()*&^%';
+    const fontSize = 14;
+    const columns = canvas.width / fontSize;
+    const drops: number[] = [];
+
+    for (let i = 0; i < columns; i++) {
+      drops[i] = 1;
+    }
+
+    const draw = () => {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = '#f59e0b'; // Amber to match brand
+      ctx.font = fontSize + 'px monospace';
+
+      for (let i = 0; i < drops.length; i++) {
+        const text = characters.charAt(Math.floor(Math.random() * characters.length));
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    };
+
+    const interval = setInterval(draw, 33);
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="fixed inset-0 z-0 opacity-20 pointer-events-none" />;
+};
+
+const Background = ({ theme }: { theme: ThemeType }) => {
+  if (theme === 'roach') return <RoachBackground />;
+  if (theme === 'matrix') return <MatrixBackground />;
+  return null;
+};
+
 const titles = [
   "ayyyyy this tufff as beans",
   "yes squishy i finally finished the site bro",
@@ -91,7 +163,14 @@ export default function App() {
   const [gamesData, setGamesData] = useState<GameData[]>(games);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isCloaked, setIsCloaked] = useState(false);
+  const [isCloaked, setIsCloaked] = useState(() => localStorage.getItem('is_cloaked') === 'true');
+  const [cloakType, setCloakType] = useState<CloakType>(() => (localStorage.getItem('cloak_type') as CloakType) || 'google');
+  const [theme, setTheme] = useState<ThemeType>(() => (localStorage.getItem('theme') as ThemeType) || 'roach');
+  const [favorites, setFavorites] = useState<string[]>(() => JSON.parse(localStorage.getItem('favorites') || '[]'));
+  const [recentlyPlayed, setRecentlyPlayed] = useState<string[]>(() => JSON.parse(localStorage.getItem('recently_played') || '[]'));
+  const [showSettings, setShowSettings] = useState(false);
+  const [panicKey, setPanicKey] = useState(() => localStorage.getItem('panic_key') || '`');
+  const [panicUrl, setPanicUrl] = useState(() => localStorage.getItem('panic_url') || 'https://classroom.google.com');
   const [logoClicks, setLogoClicks] = useState(0);
   const [showJumpscare, setShowJumpscare] = useState(false);
   const [showSquishyEffect, setShowSquishyEffect] = useState(false);
@@ -214,16 +293,52 @@ export default function App() {
   };
 
   useEffect(() => {
+    localStorage.setItem('is_cloaked', String(isCloaked));
+    localStorage.setItem('cloak_type', cloakType);
+    localStorage.setItem('theme', theme);
+    localStorage.setItem('favorites', JSON.stringify(favorites));
+    localStorage.setItem('recently_played', JSON.stringify(recentlyPlayed));
+    localStorage.setItem('panic_key', panicKey);
+    localStorage.setItem('panic_url', panicUrl);
+  }, [isCloaked, cloakType, theme, favorites, recentlyPlayed, panicKey, panicUrl]);
+
+  useEffect(() => {
     if (isCloaked) {
-      document.title = "Google";
+      const config = CLOAK_CONFIG[cloakType];
+      document.title = config.title;
       const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-      if (link) link.href = "https://www.google.com/favicon.ico";
+      if (link) link.href = config.icon;
     } else {
       document.title = "flyingroach33 games";
       const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
       if (link) link.href = "/favicon.ico";
     }
-  }, [isCloaked]);
+  }, [isCloaked, cloakType]);
+
+  const toggleFavorite = (e: React.MouseEvent, gameId: string) => {
+    e.stopPropagation();
+    setFavorites(prev => 
+      prev.includes(gameId) ? prev.filter(id => id !== gameId) : [...prev, gameId]
+    );
+  };
+
+  const handleGameSelect = (game: GameData) => {
+    setSelectedGame(game.htmlFile);
+    setRecentlyPlayed(prev => {
+      const filtered = prev.filter(id => id !== game.id);
+      return [game.id, ...filtered].slice(0, 10);
+    });
+  };
+
+  const favoriteGames = useMemo(() => {
+    return gamesData.filter(game => favorites.includes(game.id));
+  }, [gamesData, favorites]);
+
+  const recentGames = useMemo(() => {
+    return recentlyPlayed
+      .map(id => gamesData.find(game => game.id === id))
+      .filter((game): game is GameData => !!game);
+  }, [gamesData, recentlyPlayed]);
 
   const filteredGames = useMemo(() => {
     return gamesData.filter(game => 
@@ -232,6 +347,20 @@ export default function App() {
     );
   }, [gamesData, searchQuery]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === panicKey) {
+        window.location.href = panicUrl;
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [panicKey, panicUrl]);
+
+  const handleRandomGame = () => {
+    const randomIndex = Math.floor(Math.random() * gamesData.length);
+    handleGameSelect(gamesData[randomIndex]);
+  };
   const handleLogoClick = () => {
     setLogoClicks(prev => {
       const next = prev + 1;
@@ -349,7 +478,7 @@ export default function App() {
 
   return (
     <div className={`min-h-screen bg-brand-dark text-[#e7e5e4] font-sans selection:bg-brand-accent/30 relative overflow-x-hidden ${isZooming ? 'animate-zoom-horror' : ''}`}>
-      <RoachBackground />
+      <Background theme={theme} />
       
       {/* Header */}
       <header className="sticky top-0 z-40 w-full border-b border-white/5 bg-brand-dark/80 backdrop-blur-md">
@@ -399,6 +528,14 @@ export default function App() {
               Request Game
             </button>
             <button
+              onClick={handleRandomGame}
+              className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-brand-accent/10 border border-brand-accent/20 rounded-lg text-xs font-bold text-brand-gold hover:bg-brand-accent/20 transition-all"
+              title="Random Game"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              Random
+            </button>
+            <button
               onClick={() => setShowBrowser(true)}
               className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-brand-accent/10 border border-brand-accent/20 rounded-lg text-xs font-bold text-brand-gold hover:bg-brand-accent/20 transition-all"
               title="Open Browser"
@@ -416,10 +553,17 @@ export default function App() {
             </button>
             <button
               onClick={() => setIsCloaked(!isCloaked)}
-              className="p-2 bg-white/5 border border-white/10 rounded-lg text-white/40 hover:text-brand-gold transition-all"
+              className={`p-2 border rounded-lg transition-all ${isCloaked ? 'bg-brand-gold/20 border-brand-gold text-brand-gold' : 'bg-white/5 border-white/10 text-white/40 hover:text-brand-gold'}`}
               title="Toggle Mask"
             >
               {isCloaked ? <ShieldOff className="w-5 h-5" /> : <Shield className="w-5 h-5" />}
+            </button>
+            <button
+              onClick={() => setShowSettings(true)}
+              className="p-2 bg-white/5 border border-white/10 rounded-lg text-white/40 hover:text-brand-gold transition-all"
+              title="Settings"
+            >
+              <Settings className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -446,51 +590,59 @@ export default function App() {
           </motion.h2>
         </div>
 
+        {/* Favorites Section */}
+        {favoriteGames.length > 0 && !searchQuery && (
+          <div className="mb-12">
+            <div className="flex items-center gap-3 mb-6">
+              <Heart className="w-5 h-5 text-red-500 fill-current" />
+              <h3 className="text-xl font-bold text-white uppercase tracking-tight">Favorites</h3>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+              {favoriteGames.map((game) => (
+                <GameCard 
+                  key={game.id} 
+                  game={game} 
+                  onSelect={handleGameSelect} 
+                  isFavorite={true} 
+                  onToggleFavorite={toggleFavorite} 
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recently Played Section */}
+        {recentGames.length > 0 && !searchQuery && (
+          <div className="mb-12">
+            <div className="flex items-center gap-3 mb-6">
+              <Clock className="w-5 h-5 text-brand-gold" />
+              <h3 className="text-xl font-bold text-white uppercase tracking-tight">Recently Played</h3>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+              {recentGames.map((game) => (
+                <GameCard 
+                  key={game.id} 
+                  game={game} 
+                  onSelect={handleGameSelect} 
+                  isFavorite={favorites.includes(game.id)} 
+                  onToggleFavorite={toggleFavorite} 
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Games Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
           {filteredGames.map((game, index) => (
-            <motion.div
-              key={game.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.02 }}
-              whileHover={{ y: -4 }}
-              className="group relative bg-white/[0.02] rounded-2xl overflow-hidden border border-white/5 hover:border-amber-500/30 transition-all duration-300 cursor-pointer"
-              onClick={() => setSelectedGame(game.htmlFile)}
-            >
-              <div className="aspect-square bg-black/40 relative overflow-hidden">
-                {game.imageFile ? (
-                  <img 
-                    src={game.imageFile} 
-                    alt={game.title}
-                    className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = `https://picsum.photos/seed/${game.id}/400/400?blur=1`;
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Gamepad2 className="w-8 h-8 text-white/10" />
-                  </div>
-                )}
-                
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
-                
-                <div className="absolute bottom-3 left-3 right-3">
-                  <h3 className="text-sm font-semibold text-white truncate group-hover:text-amber-400 transition-colors">
-                    {game.title}
-                  </h3>
-                </div>
-
-                {/* Play Button Overlay */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-[1px]">
-                  <div className="w-12 h-12 bg-amber-500 rounded-full flex items-center justify-center shadow-lg shadow-amber-500/20">
-                    <Play className="w-5 h-5 text-black fill-current ml-0.5" />
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+            <GameCard 
+              key={game.id} 
+              game={game} 
+              index={index}
+              onSelect={handleGameSelect} 
+              isFavorite={favorites.includes(game.id)} 
+              onToggleFavorite={toggleFavorite} 
+            />
           ))}
         </div>
         
@@ -507,6 +659,137 @@ export default function App() {
           </div>
         ) : null}
       </main>
+
+      {/* Settings Modal */}
+      <AnimatePresence>
+        {showSettings && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-md bg-brand-dark border border-white/10 rounded-2xl p-6 shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <Settings className="w-5 h-5 text-brand-gold" />
+                  <h3 className="text-xl font-bold text-white">Settings</h3>
+                </div>
+                <button onClick={() => setShowSettings(false)} className="text-white/40 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-8">
+                {/* Cloak Settings */}
+                <section>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Eye className="w-4 h-4 text-white/40" />
+                    <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest">Tab Cloaking</h4>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(Object.keys(CLOAK_CONFIG) as CloakType[]).map(type => (
+                      <button
+                        key={type}
+                        onClick={() => setCloakType(type)}
+                        className={`px-3 py-2 rounded-xl text-xs font-medium border transition-all ${cloakType === type ? 'bg-brand-gold/20 border-brand-gold text-brand-gold' : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'}`}
+                      >
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                {/* Theme Settings */}
+                <section>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Palette className="w-4 h-4 text-white/40" />
+                    <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest">Background Theme</h4>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['roach', 'matrix', 'void'] as ThemeType[]).map(t => (
+                      <button
+                        key={t}
+                        onClick={() => setTheme(t)}
+                        className={`px-3 py-2 rounded-xl text-xs font-medium border transition-all ${theme === t ? 'bg-brand-gold/20 border-brand-gold text-brand-gold' : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'}`}
+                      >
+                        {t.charAt(0).toUpperCase() + t.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                {/* Panic Key Settings */}
+                <section>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Lock className="w-4 h-4 text-white/40" />
+                    <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest">Panic Key</h4>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <input 
+                        type="text"
+                        value={panicKey}
+                        onChange={(e) => setPanicKey(e.target.value.slice(-1))}
+                        placeholder="Key"
+                        className="w-20 bg-black/40 border border-white/10 rounded-xl p-2 text-center text-sm text-white focus:outline-none focus:border-brand-gold/50"
+                      />
+                      <input 
+                        type="text"
+                        value={panicUrl}
+                        onChange={(e) => setPanicUrl(e.target.value)}
+                        placeholder="Redirect URL"
+                        className="flex-1 bg-black/40 border border-white/10 rounded-xl p-2 text-sm text-white focus:outline-none focus:border-brand-gold/50"
+                      />
+                    </div>
+                    <p className="text-[10px] text-white/20">Pressing this key will immediately redirect you to the URL above.</p>
+                  </div>
+                </section>
+
+                {/* Data Management */}
+                <section>
+                  <div className="flex items-center gap-2 mb-4">
+                    <RotateCcw className="w-4 h-4 text-white/40" />
+                    <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest">Data Management</h4>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => {
+                        if (confirm('Clear all favorites?')) setFavorites([]);
+                      }}
+                      className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-xl text-[10px] font-bold text-red-500 hover:bg-red-500/20 transition-all"
+                    >
+                      Clear Favorites
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm('Clear recent games?')) setRecentlyPlayed([]);
+                      }}
+                      className="px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold text-white/40 hover:bg-white/10 transition-all"
+                    >
+                      Clear Recent
+                    </button>
+                  </div>
+                </section>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-white/5">
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-white font-bold hover:bg-white/10 transition-all"
+                >
+                  Done
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Feedback/Request Modal */}
       <AnimatePresence>
@@ -796,3 +1079,66 @@ export default function App() {
     </div>
   );
 }
+
+interface GameCardProps {
+  game: GameData;
+  index?: number;
+  onSelect: (game: GameData) => void;
+  isFavorite: boolean;
+  onToggleFavorite: (e: React.MouseEvent, id: string) => void;
+}
+
+const GameCard: React.FC<GameCardProps> = ({ game, index, onSelect, isFavorite, onToggleFavorite }) => {
+  return (
+    <motion.div
+      initial={index !== undefined ? { opacity: 0, y: 20 } : false}
+      animate={index !== undefined ? { opacity: 1, y: 0 } : false}
+      transition={index !== undefined ? { delay: index * 0.02 } : undefined}
+      whileHover={{ y: -4 }}
+      className="group relative bg-white/[0.02] rounded-2xl overflow-hidden border border-white/5 hover:border-amber-500/30 transition-all duration-300 cursor-pointer"
+      onClick={() => onSelect(game)}
+    >
+      <div className="aspect-square bg-black/40 relative overflow-hidden">
+        {game.imageFile ? (
+          <img 
+            src={game.imageFile} 
+            alt={game.title}
+            className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = `https://picsum.photos/seed/${game.id}/400/400?blur=1`;
+            }}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Gamepad2 className="w-8 h-8 text-white/10" />
+          </div>
+        )}
+        
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
+        
+        <div className="absolute top-3 right-3 z-20">
+          <button
+            onClick={(e) => onToggleFavorite(e, game.id)}
+            className={`p-2 rounded-full backdrop-blur-md border transition-all ${isFavorite ? 'bg-red-500/20 border-red-500/40 text-red-500' : 'bg-black/40 border-white/10 text-white/40 hover:text-red-500 hover:bg-red-500/10'}`}
+          >
+            <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+          </button>
+        </div>
+
+        <div className="absolute bottom-3 left-3 right-3">
+          <h3 className="text-sm font-semibold text-white truncate group-hover:text-amber-400 transition-colors">
+            {game.title}
+          </h3>
+        </div>
+
+        {/* Play Button Overlay */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-[1px]">
+          <div className="w-12 h-12 bg-amber-500 rounded-full flex items-center justify-center shadow-lg shadow-amber-500/20">
+            <Play className="w-5 h-5 text-black fill-current ml-0.5" />
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
