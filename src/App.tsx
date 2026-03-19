@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Gamepad2, X, Play, Bug, Search, Shield, ShieldOff, Zap, Lock, Maximize, RotateCcw } from 'lucide-react';
+import games from './data/games.json';
 
 interface GameData {
   id: string;
@@ -87,8 +88,8 @@ const titles = [
 export default function App() {
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
   const [randomTitle, setRandomTitle] = useState("");
-  const [gamesData, setGamesData] = useState<GameData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [gamesData, setGamesData] = useState<GameData[]>(games);
+  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isCloaked, setIsCloaked] = useState(false);
   const [logoClicks, setLogoClicks] = useState(0);
@@ -284,26 +285,6 @@ export default function App() {
 
   useEffect(() => {
     setRandomTitle(titles[Math.floor(Math.random() * titles.length)]);
-    
-    fetch('/api/games?v=' + Date.now())
-      .then(res => {
-        if (!res.ok) return fetch('/games.json?v=' + Date.now());
-        return res;
-      })
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        return res.json();
-      })
-      .then(data => {
-        console.log("Fetched games:", data.length);
-        console.log("First game sample:", data[0]);
-        setGamesData(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Failed to fetch games:", err);
-        setLoading(false);
-      });
   }, []);
 
   const openAboutBlank = (url: string) => {
