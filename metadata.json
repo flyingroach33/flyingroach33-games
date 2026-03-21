@@ -1,5 +1,7 @@
 {
-  "name": "flyingroach33 games",
-  "description": "A refined hub with tab cloaking, about:blank support, and interactive roaches.",
-  "requestFramePermissions": []
+  "name": "GN-Math Game Portal",
+  "description": "A modern portal to play all games from gn-math.github.io",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
 }

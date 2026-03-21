@@ -17,8 +17,10 @@ const CLOAK_CONFIG: Record<CloakType, { title: string, icon: string }> = {
 interface GameData {
   id: string;
   title: string;
-  imageFile: string | null;
-  htmlFile: string | null;
+  category: string;
+  description: string;
+  coverUrl: string | null;
+  gameUrl: string | null;
 }
 
 const RoachBackground = () => {
@@ -177,7 +179,7 @@ export default function App() {
   const [isZooming, setIsZooming] = useState(false);
   const [showHorrorSequence, setShowHorrorSequence] = useState(false);
   const [showBrowser, setShowBrowser] = useState(false);
-  const [browserUrl, setBrowserUrl] = useState("https://rammer.nana.alliancetravel.tur.ar/");
+  const [browserUrl] = useState("https://sciencefair.b-cdn.net/");
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbackType, setFeedbackType] = useState<'feedback' | 'request'>('feedback');
   const [feedbackMessage, setFeedbackMessage] = useState("");
@@ -200,62 +202,72 @@ export default function App() {
     }
   };
 
-  const FEEDBACK_WEBHOOK = "https://discord.com/api/webhooks/1483271485262139534/eR7uyXr1PaP7fmy9wlPTah3dRF5wfYrkcI5odf5OaHZy6gowxdypUL3PLmHfrYDdwcfj";
-  const REQUEST_WEBHOOK = "https://discord.com/api/webhooks/1483271588026781736/FjL-MojzpJGJsNS4wF0fJtlwSKR87xS1-K-LBb8zVTnmngmZ5ZQV0nPrkctszSPc4UNt";
-
   const handleFeedbackSubmit = async (e: any) => {
     e.preventDefault();
-    const webhookUrl = feedbackType === 'feedback' ? FEEDBACK_WEBHOOK : REQUEST_WEBHOOK;
-
-    if (!webhookUrl) {
-      alert("Webhook URL not configured.");
-      setShowFeedbackModal(false);
-      return;
-    }
-
     setIsSendingFeedback(true);
     try {
-      const payload = {
-        embeds: [{
-          title: feedbackType === 'feedback' ? 'New Feedback' : 'New Game Request',
-          description: feedbackMessage,
-          color: feedbackType === 'feedback' ? 0x00ff00 : 0xffa500,
-          fields: [
-            {
-              name: "Sent By",
-              value: senderName || "Anonymous",
-              inline: true
-            }
-          ],
-          timestamp: new Date().toISOString(),
-          footer: { text: 'flyingroach33 games' }
-        }]
-      };
-
-      await fetch(webhookUrl, {
+      const response = await fetch('/api/v1/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          type: feedbackType,
+          message: feedbackMessage,
+          senderName: senderName
+        })
       });
+
+      if (!response.ok) throw new Error('Failed to send');
 
       alert('Sent successfully!');
       setFeedbackMessage("");
       setSenderName("");
       setShowFeedbackModal(false);
     } catch (error) {
-      console.error('Error sending to Discord:', error);
-      alert('Failed to send.');
+      console.error('Error sending feedback:', error);
+      alert('Failed to send. Please try again later.');
     } finally {
       setIsSendingFeedback(false);
     }
   };
 
-  const rammerheadLinks = [
-    { name: "Server 1", url: "https://rammer.nana.alliancetravel.tur.ar/" },
-    { name: "Server 2", url: "https://homework.fascinatingphoto.com/" },
-    { name: "Server 3", url: "https://mathexcel.texasmath.net/" },
-    { name: "Server 4", url: "https://tenpiece.machophd.org/" }
-  ];
+  useEffect(() => {
+    const fetchGames = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/games');
+        if (!response.ok) throw new Error('Failed to fetch games');
+        const data = await response.json();
+        
+        // Map the fields if necessary (public/games.json uses imageFile/htmlFile)
+        const mappedGames = data.map((g: any) => ({
+          ...g,
+          id: g.id || Math.random().toString(36).substr(2, 9),
+          category: g.category || 'Other',
+          description: g.description || '',
+          coverUrl: g.coverUrl || g.imageFile || null,
+          gameUrl: g.gameUrl || g.htmlFile || null
+        }));
+        
+        setGamesData(mappedGames);
+      } catch (error) {
+        console.error('Error fetching games:', error);
+        // Fallback to imported games if API fails
+        setGamesData(games.map((g: any) => ({
+          ...g,
+          coverUrl: g.coverUrl || g.imageFile || null,
+          gameUrl: g.gameUrl || g.htmlFile || null
+        })));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGames();
+  }, []);
+
+  useEffect(() => {
+    setRandomTitle(titles[Math.floor(Math.random() * titles.length)]);
+  }, []);
 
   useEffect(() => {
     if (randomTitle === "i see you") {
@@ -323,7 +335,7 @@ export default function App() {
   };
 
   const handleGameSelect = (game: GameData) => {
-    setSelectedGame(game.htmlFile);
+    setSelectedGame(game.gameUrl);
     setRecentlyPlayed(prev => {
       const filtered = prev.filter(id => id !== game.id);
       return [game.id, ...filtered].slice(0, 10);
@@ -867,17 +879,11 @@ export default function App() {
               <div className="p-4 border-b border-white/5 bg-white/5 flex items-center gap-4 flex-wrap">
                 <div className="flex items-center gap-2">
                   <div className="px-3 py-1 bg-brand-accent/20 border border-brand-accent/30 rounded-lg text-[10px] font-bold text-brand-gold uppercase tracking-widest">
-                    Rammerhead
+                    Browser
                   </div>
-                  <select 
-                    value={browserUrl}
-                    onChange={(e) => setBrowserUrl(e.target.value)}
-                    className="bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white/60 focus:outline-none focus:border-brand-gold/50"
-                  >
-                    {rammerheadLinks.map(link => (
-                      <option key={link.url} value={link.url}>{link.name}</option>
-                    ))}
-                  </select>
+                  <div className="px-3 py-1 bg-black/40 border border-white/10 rounded-lg text-[10px] text-white/40 font-mono">
+                    {browserUrl}
+                  </div>
                 </div>
                 <div className="flex-1" />
                 <div className="flex items-center gap-2">
@@ -1099,21 +1105,29 @@ const GameCard: React.FC<GameCardProps> = ({ game, index, onSelect, isFavorite, 
       onClick={() => onSelect(game)}
     >
       <div className="aspect-square bg-black/40 relative overflow-hidden">
-        {game.imageFile ? (
+        {game.coverUrl ? (
           <img 
-            src={game.imageFile} 
+            src={game.coverUrl} 
             alt={game.title}
             className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
             referrerPolicy="no-referrer"
             onError={(e) => {
-              (e.target as HTMLImageElement).src = `https://picsum.photos/seed/${game.id}/400/400?blur=1`;
+              (e.target as HTMLImageElement).style.display = 'none';
+              const parent = (e.target as HTMLImageElement).parentElement;
+              if (parent) {
+                const fallback = parent.querySelector('.image-fallback');
+                if (fallback) (fallback as HTMLElement).style.display = 'flex';
+              }
             }}
           />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Gamepad2 className="w-8 h-8 text-white/10" />
-          </div>
-        )}
+        ) : null}
+        
+        <div className={`image-fallback w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-amber-500/10 to-red-500/10 ${game.coverUrl ? 'hidden' : ''}`}>
+          <Gamepad2 className="w-12 h-12 text-amber-500/20 mb-2" />
+          <span className="text-[10px] font-bold uppercase tracking-tighter text-white/20 text-center px-4">
+            {game.title}
+          </span>
+        </div>
         
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
         

@@ -27,6 +27,44 @@ async function startServer() {
     }
   });
 
+  app.post('/api/v1/submit', express.json(), async (req, res) => {
+    const { type, message, senderName } = req.body;
+    console.log(`Received ${type} from ${senderName || 'Anonymous'}`);
+    
+    const FEEDBACK_WEBHOOK = "https://discord.com/api/webhooks/1483271485262139534/eR7uyXr1PaP7fmy9wlPTah3dRF5wfYrkcI5odf5OaHZy6gowxdypUL3PLmHfrYDdwcfj";
+    const REQUEST_WEBHOOK = "https://discord.com/api/webhooks/1483271588026781736/FjL-MojzpJGJsNS4wF0fJtlwSKR87xS1-K-LBb8zVTnmngmZ5ZQV0nPrkctszSPc4UNt";
+    
+    const webhookUrl = type === 'feedback' ? FEEDBACK_WEBHOOK : REQUEST_WEBHOOK;
+
+    try {
+      const payload = {
+        embeds: [{
+          title: type === 'feedback' ? 'New Feedback' : 'New Game Request',
+          description: message,
+          color: type === 'feedback' ? 0x00ff00 : 0xffa500,
+          fields: [
+            {
+              name: "Sent By",
+              value: senderName || "Anonymous",
+              inline: true
+            }
+          ],
+          timestamp: new Date().toISOString(),
+          footer: { text: 'flyingroach33 games' }
+        }]
+      };
+
+      const axios = (await import('axios')).default;
+      console.log(`Forwarding to Discord webhook...`);
+      await axios.post(webhookUrl, payload);
+      console.log(`Successfully sent to Discord`);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error proxying feedback to Discord:', error);
+      res.status(500).json({ error: 'Failed to send feedback' });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
