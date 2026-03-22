@@ -234,7 +234,7 @@ export default function App() {
     const fetchGames = async () => {
       setLoading(true);
       try {
-        const response = await fetch('/api/games');
+        const response = await fetch('/games.json');
         if (!response.ok) throw new Error('Failed to fetch games');
         const data = await response.json();
         
